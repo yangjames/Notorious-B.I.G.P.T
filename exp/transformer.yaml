@@ -1,0 +1,73 @@
+# @package _global_
+batch_size: 64
+context_length: 100
+#vocab_size: 67
+vocab_size: 7055
+data_path: data/notorious_lyrics.txt
+validate_every_n_steps: 100
+
+datamodule:
+  _target_: datasets.dataset.NotoriousDataset
+  batch_size: ${batch_size}
+  context_length: ${context_length}
+  text_path: ${data_path}
+
+model:
+  _target_: models.model.NotoriousModel
+  context_length: ${context_length}
+  vocab_size: ${vocab_size}
+  num_embeddings: 256
+  num_heads: 16
+  num_transformer_layers: 3
+  feed_forward_dims: 1024
+  learning_rate: 1e-3
+
+loggers:
+  wandb:
+    _target_: pytorch_lightning.loggers.wandb.WandbLogger
+    project: ${oc.env:WANDB_PROJECT}
+    entity: ${oc.env:WANDB_ENTITY}
+    job_type: "train"
+    group: ""
+    save_dir: ${logs_dir}
+
+callbacks:
+  rich_progress_bar:
+    _target_: pytorch_lightning.callbacks.RichProgressBar
+
+  model_checkpoint:
+    _target_: pytorch_lightning.callbacks.ModelCheckpoint
+    monitor: "valid/loss"   # name of the logged metric which determines when model is improving
+    save_top_k: 1           # save k best models (determined by above metric)
+    save_last: True         # additionaly always save model from last epoch
+    mode: "min"             # can be "max" or "min"
+    verbose: False
+    dirpath: ${logs_dir}/ckpts/notorious_model/${now:%Y-%m-%d-%H-%M-%S}
+    filename: '{epoch:02d}-{valid/loss:.3f}'
+
+  latest_model:
+    _target_: pytorch_lightning.callbacks.ModelCheckpoint
+    monitor: "valid/loss"   # name of the logged metric which determines when model is improving
+    save_top_k: 0           # save k best models (determined by above metric)
+    save_last: True         # additionaly always save model from last epoch
+    mode: "min"             # can be "max" or "min"
+    verbose: False
+    dirpath: ${logs_dir}/latest/
+    filename: '{epoch:02d}-{valid/loss:.3f}'
+
+
+trainer:
+  _target_: pytorch_lightning.Trainer
+  gpus: 1
+  accelerator: null
+  precision: 32
+  min_epochs: 0
+  max_epochs: -1
+  max_steps: 2000
+  enable_model_summary: True
+  log_every_n_steps: 10
+  check_val_every_n_epoch: null
+  limit_val_batches: 100
+  val_check_interval: ${validate_every_n_steps}
+  num_sanity_val_steps: 10
+  # profiler: simple
