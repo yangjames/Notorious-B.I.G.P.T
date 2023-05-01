@@ -6,6 +6,10 @@ This project is purely for self-edification and amusement. Everything is in PyTo
 
 `pip install -r requirements.txt`
 
+## Pre-requisites
+
+Must have a [Weights and Biases](https://wandb.ai/site) account. Sign-up is free. Add your entity name and api key to the `.env` file where indicated to be able to run the trainer.
+
 
 ## To run the pretrained model
 
